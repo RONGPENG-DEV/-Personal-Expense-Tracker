@@ -1,0 +1,220 @@
+# Personal Expense Tracker
+# Purpose: Help users record, view, and analyze daily expenses, with file saving/loading.
+# Skills Used: Variables, lists/dictionaries, loops, conditionals, functions, file I/O, error handling.
+# Initialize an empty list to store expenses. Each expense is a dictionary with "date", "amount", and "category".
+expenses = []
+def show_main_menu():
+    """Display the main menu options and return the user's choice."""
+    # Print the menu header and options
+    print("\n" + "="*30)
+    print("     Personal Expense Tracker")
+    print("="*30)
+    print("1. Add a new expense")
+    print("2. View all expenses")
+    print("3. Calculate daily/monthly total")
+    print("4. Save expenses to a file (expenses.txt)")
+    print("5. Load expenses from a file (expenses.txt)")
+    print("6. Exit the program")
+    print("="*30)
+    
+    # Get user input and return it (strip whitespace to handle accidental spaces)
+    user_choice = input("Enter your choice (1-6): ").strip()
+    return user_choice
+def add_expense():
+    """Collect valid expense details from the user and add to the expenses list."""
+    # Step 1: Get and validate the date (basic check for YYYY-MM-DD format)
+    print("\n--- Add a New Expense ---")
+    expense_date = input("Enter date (format: YYYY-MM-DD, e.g., 2024-05-20): ").strip()
+    
+    # Check if date is 10 characters and has hyphens in the correct positions
+    if len(expense_date) != 10 or expense_date[4] != "-" or expense_date[7] != "-":
+        print(" Error: Invalid date format! Use YYYY-MM-DD (e.g., 2024-05-20).")
+        return  # Exit the function if date is invalid
+    
+    # Step 2: Get and validate the amount (must be a positive number)
+    amount_input = input("Enter amount (e.g., 4.50 for $4.50): ").strip()
+    
+    try:
+        # Convert input to a float (handles decimals for cents)
+        expense_amount = float(amount_input)
+        
+        # Ensure amount is not negative (expenses can't be negative)
+        if expense_amount < 0:
+            print(" Error: Amount cannot be negative! Please enter a positive number.")
+            return  # Exit if amount is negative
+    
+    # Catch errors if input is not a number (e.g., "coffee" instead of "4.50")
+    except ValueError:
+        print(" Error: Invalid amount! Please enter a number (e.g., 4.50).")
+        return  # Exit if amount is not a number
+    
+    # Step 3: Get the expense category (no strict validation—user can enter any category)
+    expense_category = input("Enter category (e.g., Food, Rent, Transportation): ").strip()
+    
+    # Step 4: Create an expense dictionary and add it to the expenses list
+    new_expense = {
+        "date": expense_date,
+        "amount": expense_amount,
+        "category": expense_category
+    }
+    expenses.append(new_expense)
+    
+    # Confirm success to the user
+    print(f"Expense added! Date: {expense_date}, Amount: ${expense_amount:.2f}, Category: {expense_category}")
+def view_expenses():
+    """Display all recorded expenses in a readable format. If none exist, show a message."""
+    print("\n--- Your Recorded Expenses ---")
+    
+    # Check if the expenses list is empty
+    if not expenses:
+        print("ℹ️ No expenses recorded yet. Add an expense first!")
+        return
+    
+    # Print a header row for clarity
+    print(f"{'Date':<12} {'Amount':<10} {'Category':<15}")
+    print("-" * 40)
+    
+    # Loop through each expense and print formatted details
+    for expense in expenses:
+        # Format amount as currency (2 decimal places for cents)
+        formatted_amount = f"${expense['amount']:.2f}"
+        # Align columns for readability (left-align date/category, right-align amount)
+        print(f"{expense['date']:<12} {formatted_amount:<10} {expense['category']:<15}")
+    
+    print("-" * 40)
+def calculate_total():
+    """Let the user choose to calculate a daily or monthly total, then display the result."""
+    print("\n--- Calculate Expense Total ---")
+    print("1. Calculate daily total (specific date)")
+    print("2. Calculate monthly total (specific month/year)")
+    total_choice = input("Enter your choice (1 or 2): ").strip()
+    
+    # Calculate Daily Total
+    if total_choice == "1":
+        target_date = input("Enter date for daily total (YYYY-MM-DD): ").strip()
+        daily_sum = 0  # Initialize sum to 0
+        
+        # Loop through expenses and add amounts for the target date
+        for expense in expenses:
+            if expense["date"] == target_date:
+                daily_sum += expense["amount"]
+        
+        # Format and print the result
+        print(f"\n📅 Daily Total for {target_date}: ${daily_sum:.2f}")
+    
+    # Calculate Monthly Total
+    elif total_choice == "2":
+        target_month = input("Enter month/year for monthly total (YYYY-MM): ").strip()
+        monthly_sum = 0  # Initialize sum to 0
+        
+        # Loop through expenses: extract YYYY-MM from the expense date (first 7 characters)
+        for expense in expenses:
+            expense_month = expense["date"][:7]  # e.g., "2024-05-20" → "2024-05"
+            if expense_month == target_month:
+                monthly_sum += expense["amount"]
+        
+        # Format and print the result
+        print(f"\n📅 Monthly Total for {target_month}: ${monthly_sum:.2f}")
+    
+    # Handle invalid choice (not 1 or 2)
+    else:
+        print(" Error: Invalid choice! Please enter 1 or 2.")
+def save_to_file():
+    """Save all expenses to a text file named 'expenses.txt' (overwrites existing file)."""
+    # Check if there are expenses to save
+    if not expenses:
+        print("ℹ️ No expenses to save! Add expenses first.")
+        return
+    
+    # Open the file in "write" mode ('w')—overwrites existing content
+    try:
+        with open("expenses.txt", "w") as file:
+            # Write each expense as a line: "date|amount|category" (pipe-separated for easy loading)
+            for expense in expenses:
+                # Convert amount to string (since we need to write text to the file)
+                file_line = f"{expense['date']}|{expense['amount']}|{expense['category']}\n"
+                file.write(file_line)
+        
+        print("Expenses saved to 'expenses.txt' successfully!")
+    
+    # Catch unexpected errors (e.g., permission issues)
+    except Exception as e:
+        print(f" Error saving file: {str(e)}")
+def load_from_file():
+    """Load expenses from 'expenses.txt' and add them to the expenses list (clears existing expenses first)."""
+    # Open the file in "read" mode ('r')
+    try:
+        with open("expenses.txt", "r") as file:
+            # Clear the current expenses list to avoid duplicates
+            expenses.clear()
+            
+            # Read each line in the file
+            for line in file:
+                # Remove extra newlines from the line
+                line = line.strip()
+                # Split the line into date, amount, category (using "|" as the separator)
+                parts = line.split("|")
+                
+                # Skip invalid lines (e.g., lines with missing parts)
+                if len(parts) != 3:
+                    print(f"Skipping invalid line in file: {line}")
+                    continue
+                
+                # Extract and clean each part
+                expense_date = parts[0].strip()
+                expense_category = parts[2].strip()
+                
+                # Convert amount from string to float (handle errors for invalid numbers)
+                try:
+                    expense_amount = float(parts[1].strip())
+                except ValueError:
+                    print(f"Skipping line with invalid amount: {line}")
+                    continue
+                
+                # Add the loaded expense to the list
+                loaded_expense = {
+                    "date": expense_date,
+                    "amount": expense_amount,
+                    "category": expense_category
+                }
+                expenses.append(loaded_expense)
+        
+        print(f"Loaded {len(expenses)} expenses from 'expenses.txt'!")
+    
+    # Handle case where the file doesn't exist
+    except FileNotFoundError:
+        print(" Error: 'expenses.txt' not found. No expenses loaded.")
+    
+    # Catch other unexpected errors
+    except Exception as e:
+        print(f" Error loading file: {str(e)}")
+# ---------------------- Main Program Execution ----------------------
+# This is the "entry point" of the program—runs when the script is launched.
+if __name__ == "__main__":
+    print("Welcome to the Personal Expense Tracker!")
+    
+    # Main loop: keeps the program running until the user selects "6. Exit"
+    while True:
+        # Show the main menu and get the user's choice
+        user_choice = show_main_menu()
+        
+        # Call the appropriate function based on the user's choice
+        if user_choice == "1":
+            add_expense()
+        elif user_choice == "2":
+            view_expenses()
+        elif user_choice == "3":
+            calculate_total()
+        elif user_choice == "4":
+            save_to_file()
+        elif user_choice == "5":
+            load_from_file()
+        elif user_choice == "6":
+            print("\nThank you for using the Expense Tracker! Goodbye.")
+            break  # Exit the main loop (ends the program)
+        else:
+            # Handle invalid menu choices (not 1-6)
+            print(" Invalid choice! Please enter a number between 1 and 6.")
+        
+        # Pause to let the user read the output before returning to the menu
+        input("\nPress Enter to continue...")
